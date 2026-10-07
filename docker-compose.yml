@@ -1,0 +1,13 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: nest-postgres
+    restart: always
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_DB: higinex_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: LhjmVlj6dxI54qQyij8Q
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data

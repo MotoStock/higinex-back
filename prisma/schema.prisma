@@ -1,0 +1,528 @@
+// Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum AuthCodeType {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
+enum ProductStatus {
+  PUBLISHED
+  ARCHIVED
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  PREPARING
+  SHIPPED
+  DELIVERED
+  CANCELED
+  RETURN_REQUESTED
+  RETURNED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  CARD_TERMINAL
+  CASH_ON_DELIVERY
+  EXTERNAL_LINK
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  VOIDED
+}
+
+enum ShipmentStatus {
+  CREATED
+  DISPATCHED
+  IN_TRANSIT
+  DELIVERED
+  INCIDENT
+}
+
+enum ReturnStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  RECEIVED
+  CLOSED
+}
+
+enum ReturnReason {
+  DEFECT
+  WITHDRAWAL
+  SHIPPING_ERROR
+  OTHER
+}
+
+enum RefundMethod {
+  BANK_TRANSFER
+  REVERSAL
+  CASH
+  OTHER
+}
+
+enum RefundStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  VOIDED
+}
+
+enum InventoryMovementType {
+  IN
+  OUT
+  SOLD
+  RESERVED
+  UNRESERVED
+  ADJUSTMENT
+}
+
+enum DocumentType {
+  CC
+  CE
+  NIT
+  TI
+  PAS
+}
+
+model User {
+  id                 String              @id @default(uuid())
+  email              String              @unique
+  password           String
+  role               Role                @default(USER)
+  isActive           Boolean             @default(true)
+  emailVerifiedAt    DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  deletedAt          DateTime?
+  customer           Customer?
+  inventoryMovements InventoryMovement[] @relation("InventoryMovedBy")
+  authCodes          AuthCode[]
+
+  orderStatusChanges OrderStatusHistory[] @relation("OrderStatusChangedBy")
+  orderNotes         OrderNote[]
+}
+
+model AuthCode {
+  id        String       @id @default(uuid())
+  userId    String
+  type      AuthCodeType
+  codeHash  String
+  attempts  Int          @default(0)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, type])
+  @@index([expiresAt])
+}
+
+model Customer {
+  id             String            @id @default(uuid())
+  email          String            @unique
+  phone          String
+  name           String
+  documentType   DocumentType
+  documentNumber String            @unique
+  userId         String?           @unique
+  user           User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  deletedAt      DateTime?
+  addresses      CustomerAddress[]
+  contracts      Contract[]
+  orders         Order[]
+}
+
+model CustomerAddress {
+  id           String    @id @default(uuid())
+  customerId   String
+  label        String?
+  line1        String
+  line2        String?
+  neighborhood String?
+  city         String
+  state        String
+  postalCode   String?
+  notes        String?   @db.Text
+  isDefault    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+  customer     Customer  @relation(fields: [customerId], references: [id])
+}
+
+model Product {
+  id          String           @id @default(uuid())
+  name        String
+  slug        String           @unique
+  description String?          @db.Text
+  status      ProductStatus    @default(ARCHIVED)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  deletedAt   DateTime?
+  variants    ProductVariant[]
+  images      ProductImage[]
+}
+
+model ProductVariant {
+  id             String              @id @default(uuid())
+  productId      String
+  sku            String              @unique
+  gtin           String?             @unique
+  name           String
+  attributesJson Json?
+  isActive       Boolean             @default(true)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  deletedAt      DateTime?
+  product        Product             @relation(fields: [productId], references: [id])
+  images         ProductImage[]
+  inventory      InventoryBalance?
+  inventoryMoves InventoryMovement[]
+  contractItems  ContractItem[]
+  orderItems     OrderItem[]
+
+  @@index([productId, isActive])
+}
+
+model ProductImage {
+  id        String          @id @default(uuid())
+  data      Bytes
+  mimeType  String
+  filename  String?
+  altText   String?
+  isDefault Boolean         @default(false)
+  createdAt DateTime        @default(now())
+  productId String?
+  variantId String?
+  product   Product?        @relation(fields: [productId], references: [id])
+  variant   ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@index([productId])
+  @@index([variantId])
+}
+
+model Contract {
+  id         String   @id @default(uuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  isActive Boolean   @default(true)
+  startsAt DateTime  @default(now())
+  endsAt   DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  items ContractItem[]
+
+  @@index([customerId, isActive])
+}
+
+model ContractItem {
+  id           String @id @default(uuid())
+  contractId   String
+  variantId    String
+  unitPriceCop Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contract Contract       @relation(fields: [contractId], references: [id])
+  variant  ProductVariant @relation(fields: [variantId], references: [id])
+
+  @@unique([contractId, variantId])
+  @@index([variantId])
+}
+
+model InventoryBalance {
+  id        String         @id @default(uuid())
+  variantId String         @unique
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+
+  onHand   Int @default(0)
+  reserved Int @default(0)
+
+  updatedAt DateTime @updatedAt
+}
+
+model InventoryMovement {
+  id        String         @id @default(uuid())
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+
+  type     InventoryMovementType
+  quantity Int
+  reason   String?
+  notes    String?
+
+  orderId String?
+  order   Order?  @relation(fields: [orderId], references: [id])
+
+  createdByUserId String?
+  createdBy       User?   @relation("InventoryMovedBy", fields: [createdByUserId], references: [id])
+
+  occurredAt DateTime @default(now())
+
+  @@index([variantId, occurredAt])
+  @@index([orderId])
+}
+
+// TODO: Validar si es realmente necesario agregar un campo de currency a la orden
+model Order {
+  id          String      @id @default(uuid())
+  orderNumber String      @unique
+  status      OrderStatus @default(PENDING_PAYMENT)
+  currency    String      @default("COP")
+
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  buyerFullName       String?
+  buyerEmail          String?
+  buyerPhone          String?
+  buyerDocumentType   String?
+  buyerDocumentNumber String?
+
+  subtotalAmount Decimal @db.Decimal(12, 2)
+  shippingAmount Decimal @default(0) @db.Decimal(12, 2)
+  taxesAmount    Decimal @default(0) @db.Decimal(12, 2)
+  discountAmount Decimal @default(0) @db.Decimal(12, 2)
+  totalAmount    Decimal @db.Decimal(12, 2)
+
+  customerNotes String?
+  internalNotes String?
+
+  paidAt DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  items              OrderItem[]
+  shippingAddress    OrderAddress?
+  payments           Payment[]
+  shipments          Shipment[]
+  statusHistory      OrderStatusHistory[]
+  notes              OrderNote[]
+  returns            ReturnRequest[]
+  refunds            Refund[]
+  inventoryMovements InventoryMovement[]
+
+  @@index([status, createdAt])
+  @@index([customerId, createdAt])
+}
+
+model OrderItem {
+  id      String @id @default(uuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  variantId String?
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  skuSnapshot         String?
+  gtinSnapshot        String?
+  productNameSnapshot String
+  variantNameSnapshot String
+  unitPriceAmount     Decimal @db.Decimal(12, 2)
+  quantity            Int
+  lineTotalAmount     Decimal @db.Decimal(12, 2)
+
+  returnItems ReturnItem[]
+
+  @@index([orderId])
+  @@index([variantId])
+}
+
+model OrderAddress {
+  id      String @id @default(uuid())
+  orderId String @unique
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  recipientName String?
+  phone         String?
+
+  line1        String
+  line2        String?
+  neighborhood String?
+  city         String
+  state        String
+  postalCode   String?
+  notes        String?
+}
+
+model OrderStatusHistory {
+  id String @id @default(uuid())
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  fromStatus OrderStatus?
+  toStatus   OrderStatus
+
+  changedByUserId String?
+  changedBy       User?   @relation("OrderStatusChangedBy", fields: [changedByUserId], references: [id])
+
+  changedAt DateTime @default(now())
+  comment   String?
+
+  @@index([orderId, changedAt])
+}
+
+model Payment {
+  id      String @id @default(uuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  method PaymentMethod
+  status PaymentStatus @default(PENDING)
+
+  amount    Decimal   @db.Decimal(12, 2)
+  paidAt    DateTime?
+  reference String?
+  notes     String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  attachments PaymentAttachment[]
+  refunds     Refund[]
+
+  @@index([orderId])
+  @@index([status, paidAt])
+}
+
+model PaymentAttachment {
+  id        String  @id @default(uuid())
+  paymentId String
+  payment   Payment @relation(fields: [paymentId], references: [id])
+
+  url  String
+  type String?
+
+  createdAt DateTime @default(now())
+
+  @@index([paymentId])
+}
+
+model Shipment {
+  id      String @id @default(uuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  carrierName    String?
+  trackingNumber String?
+  trackingUrl    String?
+  status         ShipmentStatus @default(CREATED)
+
+  shippingCostAmount Decimal @default(0) @db.Decimal(12, 2)
+
+  shippedAt   DateTime?
+  deliveredAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([trackingNumber])
+}
+
+model ReturnRequest {
+  id      String @id @default(uuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  status ReturnStatus @default(REQUESTED)
+  reason ReturnReason
+
+  customerNotes String?
+  internalNotes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items ReturnItem[]
+
+  @@index([orderId, status])
+}
+
+model ReturnItem {
+  id       String        @id @default(uuid())
+  returnId String
+  request  ReturnRequest @relation(fields: [returnId], references: [id])
+
+  orderItemId String
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id])
+
+  quantity         Int
+  restock          Boolean @default(false)
+  restockCondition String?
+
+  @@index([returnId])
+  @@index([orderItemId])
+}
+
+model Refund {
+  id      String @id @default(uuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  paymentId String?
+  payment   Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  amount Decimal      @db.Decimal(12, 2)
+  method RefundMethod
+  status RefundStatus @default(PENDING)
+
+  processedAt DateTime?
+  reference   String?
+  notes       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderId, status])
+  @@index([paymentId])
+}
+
+model OrderNote {
+  id      String @id @default(uuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  createdByUserId String?
+  createdBy       User?   @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  visibility String @default("INTERNAL")
+  message    String
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId, createdAt])
+}

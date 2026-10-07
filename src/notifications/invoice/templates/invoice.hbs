@@ -1,0 +1,377 @@
+<html lang='es'>
+
+  <head>
+    <meta charset='UTF-8' />
+    <title>Factura {{orderNumber}}</title>
+    <style>
+      /* --- CONFIGURACIÓN DE PÁGINA (PDF) --- */
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+      :root {
+        --primary: #047857;
+        /* Verde Higinex */
+        --dark: #0f172a;
+        --gray: #64748b;
+        --light: #f1f5f9;
+        --danger: #dc2626;
+      }
+
+      @page {
+        size: A4;
+        margin: 0;
+      }
+
+      body {
+        font-family: 'Inter', sans-serif;
+        color: var(--dark);
+        background: #fff;
+        margin: 0;
+        padding: 40px 50px;
+        /* Márgenes internos del PDF */
+        font-size: 13px;
+        line-height: 1.4;
+        -webkit-print-color-adjust: exact;
+      }
+
+      /* --- HEADER Y LOGO --- */
+      .header-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        border-bottom: 2px solid var(--primary);
+        padding-bottom: 20px;
+        margin-bottom: 30px;
+      }
+
+      .company-info img {
+        height: 45px;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .company-info h2 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .company-info p {
+        margin: 2px 0;
+        font-size: 11px;
+        color: var(--gray);
+      }
+
+      .invoice-details {
+        text-align: right;
+      }
+
+      .invoice-details h1 {
+        font-size: 28px;
+        color: var(--primary);
+        margin: 0 0 5px 0;
+        text-transform: uppercase;
+        letter-spacing: -0.5px;
+      }
+
+      .tag-box {
+        display: inline-block;
+        background: var(--light);
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-weight: 600;
+        font-size: 14px;
+      }
+
+      /* --- INFORMACIÓN CLIENTE (Dos Columnas) --- */
+      .billing-grid {
+        display: flex;
+        gap: 40px;
+        margin-bottom: 30px;
+      }
+
+      .billing-col {
+        flex: 1;
+      }
+
+      .label-title {
+        font-size: 10px;
+        text-transform: uppercase;
+        color: var(--gray);
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 5px;
+        margin-bottom: 8px;
+        display: block;
+      }
+
+      .client-data p {
+        margin: 2px 0;
+        font-size: 13px;
+      }
+
+      .client-data strong {
+        font-weight: 700;
+        color: var(--dark);
+      }
+
+      /* --- TABLA DE ITEMS --- */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 30px;
+      }
+
+      th {
+        background-color: var(--primary);
+        color: #ffffff;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 10px;
+        padding: 10px;
+        text-align: left;
+      }
+
+      td {
+        padding: 12px 10px;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 12px;
+      }
+
+      /* Columnas específicas */
+      .col-desc {
+        width: 55%;
+      }
+
+      .col-qty {
+        width: 10%;
+        text-align: center;
+      }
+
+      .col-price {
+        width: 15%;
+        text-align: right;
+      }
+
+      .col-total {
+        width: 20%;
+        text-align: right;
+      }
+
+      tr:nth-child(even) {
+        background-color: #f8fafc;
+        /* Zebra striping suave */
+      }
+
+      /* --- SECCIÓN DE TOTALES Y NOTAS --- */
+      .footer-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+
+      .notes-area {
+        width: 55%;
+        padding-right: 20px;
+      }
+
+      .notes-box {
+        background-color: #fffbeb;
+        border: 1px solid #fcd34d;
+        border-radius: 6px;
+        padding: 15px;
+        font-size: 11px;
+        color: #92400e;
+      }
+
+      .totals-area {
+        width: 40%;
+      }
+
+      .totals-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        font-size: 13px;
+        border-bottom: 1px dashed #e2e8f0;
+      }
+
+      .totals-row:last-child {
+        border-bottom: none;
+        border-top: 2px solid var(--dark);
+        margin-top: 10px;
+        padding-top: 10px;
+        font-size: 16px;
+        font-weight: 800;
+        color: var(--primary);
+      }
+
+      .totals-label {
+        color: var(--gray);
+      }
+
+      .totals-value {
+        font-weight: 600;
+        text-align: right;
+      }
+
+      .discount {
+        color: var(--danger);
+      }
+
+      /* --- LEGAL FOOTER --- */
+      .legal-footer {
+        position: fixed;
+        bottom: 40px;
+        left: 50px;
+        right: 50px;
+        text-align: center;
+        font-size: 9px;
+        color: var(--gray);
+        border-top: 1px solid #e2e8f0;
+        padding-top: 15px;
+      }
+
+      .legal-footer strong {
+        color: var(--dark);
+      }
+    </style>
+  </head>
+
+  <body>
+
+    <div class='header-container'>
+      <div class='company-info'>
+        <img src='{{logoUrl}}' alt='Higinex' />
+        <h2>Higinex S.A.S.</h2>
+        <p>NIT: 902.015.844-7 | Responsable de IVA</p>
+        <p>Carrera 8 #29-47, Barrio: Silencio, Quibdó, Chocó, Colombia</p>
+        <p>TEL: +57 302 379 4105 | higinex@gmail.com</p>
+      </div>
+      <div class='invoice-details'>
+        <h1>Factura de Venta</h1>
+        <div class='tag-box'>No. {{orderNumber}}</div>
+        <p style='margin-top: 5px; font-size: 12px;'>Fecha de Emisión:
+          <strong>{{createdAtLabel}}</strong></p>
+      </div>
+    </div>
+
+    <div class='billing-grid'>
+      <div class='billing-col'>
+        <span class='label-title'>Cliente / Adquirente</span>
+        <div class='client-data'>
+          <p><strong>{{customer.name}}</strong></p>
+
+          {{#if customer.documentNumber}}
+            <p>{{customer.documentType}}: {{customer.documentNumber}}</p>
+          {{else}}
+            <p>Identificación: Consumidor Final</p>
+          {{/if}}
+
+          <p>{{customer.address}}</p>
+          <p>{{customer.email}}</p>
+
+          {{#if customer.phone}}
+            <p>Tel: {{customer.phone}}</p>
+          {{/if}}
+        </div>
+      </div>
+      <div class='billing-col'>
+        <span class='label-title'>Detalles de la Operación</span>
+        <div class='client-data'>
+          <p>Estado: <strong>{{statusLabel}}</strong></p>
+          <p>Moneda: <strong>Pesos Colombianos (COP)</strong></p>
+          <p>Vendedor: Administración Web</p>
+        </div>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th class='col-desc'>Descripción / Item</th>
+          <th class='col-qty'>Cant.</th>
+          <th class='col-price'>Precio Unit.</th>
+          <th class='col-total'>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each items}}
+          <tr>
+            <td class='col-desc'>
+              <strong>{{displayName}}</strong>
+              {{#if sku}}
+                <br /><span style='font-size: 10px; color: #64748b;'>SKU:
+                  {{sku}}</span>
+              {{/if}}
+            </td>
+            <td class='col-qty'>{{quantity}}</td>
+            <td class='col-price'>{{unitPriceFormatted}}</td>
+            <td class='col-total'>{{lineTotalFormatted}}</td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>
+
+    <div class='footer-section'>
+
+      <div class='notes-area'>
+        {{#if customerNotes}}
+          <div class='notes-box'>
+            <strong>Notas del Pedido:</strong><br />
+            {{customerNotes}}
+          </div>
+        {{/if}}
+
+        <p style='font-size: 11px; color: #64748b; margin-top: 20px;'>
+          <strong>Términos y condiciones:</strong><br />
+          Esta factura se asimila en todos sus efectos a una Letra de Cambio de
+          conformidad con el Art. 774 del Código de Comercio. Pagos por
+          transferencia a Bancolombia Cta Ahorros: 123-456789-00.
+        </p>
+      </div>
+
+      <div class='totals-area'>
+        <div class='totals-row'>
+          <span class='totals-label'>Subtotal</span>
+          <span class='totals-value'>{{subtotalFormatted}}</span>
+        </div>
+
+        {{#if discountFormatted}}
+          <div class='totals-row'>
+            <span class='totals-label'>Descuentos</span>
+            <span class='totals-value discount'>- {{discountFormatted}}</span>
+          </div>
+        {{/if}}
+
+        <div class='totals-row'>
+          <span class='totals-label'>Envío</span>
+          <span class='totals-value'>{{shippingFormatted}}</span>
+        </div>
+
+        <div class='totals-row'>
+          <span class='totals-label'>Impuestos (IVA)</span>
+          <span class='totals-value'>{{taxesFormatted}}</span>
+        </div>
+
+        <div class='totals-row'>
+          <span class='totals-label'>TOTAL A PAGAR</span>
+          <span class='totals-value'>{{totalFormatted}}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class='legal-footer'>
+      <p>
+        <strong>Higinex S.A.S.</strong>
+        - NIT 902.015.844-7<br />
+        Documento de control interno. No válido como Factura Electrónica de
+        Venta (DIAN) hasta su emisión oficial.<br />
+        Impreso por sistema computadorizado Higinex Admin V1.0
+      </p>
+    </div>
+
+  </body>
+
+</html>

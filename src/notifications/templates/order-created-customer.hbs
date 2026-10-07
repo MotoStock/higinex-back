@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmación de Pedido - Higinex</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .responsive-table td {
+            padding: 10px 0;
+        }
+
+        @media only screen and (max-width: 600px) {
+            .mobile-stack {
+                display: block !important;
+                width: 100% !important;
+            }
+
+            .mobile-padding {
+                padding: 20px !important;
+            }
+
+            .mobile-align-left {
+                text-align: left !important;
+            }
+        }
+    </style>
+</head>
+
+<body style="margin: 0; padding: 40px 0; background-color: #f8fafc;">
+
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+        <tr>
+            <td align="center">
+                <table role="presentation" class="email-container" border="0" cellpadding="0" cellspacing="0"
+                    width="600">
+
+                    <tr>
+                        <td align="center"
+                            style="padding: 30px; background-color: #ffffff; border-bottom: 3px solid #047857;">
+                            <img src="{{logoUrl}}" alt="Higinex" width="150" style="display: block; border: 0;">
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding: 40px 40px 20px 40px;" class="mobile-padding">
+                            <h1 style="margin: 0 0 15px 0; font-size: 24px; color: #1e293b; font-weight: 700;">
+                                ¡Gracias por tu compra, {{customerName}}!
+                            </h1>
+                            <p style="margin: 0 0 25px 0; font-size: 16px; color: #475569; line-height: 1.5;">
+                                Hemos recibido tu pedido correctamente. A continuación encontrarás los detalles y el
+                                estado actual.
+                            </p>
+
+                            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+                                style="background-color: #f1f5f9; border-radius: 8px; border: 1px solid #e2e8f0;">
+                                <tr>
+                                    <td width="50%" valign="top" style="padding: 20px;">
+                                        <p
+                                            style="margin: 0; font-size: 11px; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px;">
+                                            Nº de Pedido</p>
+                                        <p
+                                            style="margin: 5px 0 0 0; font-size: 18px; font-weight: bold; color: #047857;">
+                                            #{{orderNumber}}</p>
+                                    </td>
+                                    <td width="50%" valign="top" style="padding: 20px; text-align: right;"
+                                        class="mobile-align-left">
+                                        <p
+                                            style="margin: 0; font-size: 11px; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px;">
+                                            Fecha</p>
+                                        <p
+                                            style="margin: 5px 0 0 0; font-size: 15px; color: #1e293b; font-weight: 600;">
+                                            {{createdAtLabel}}</p>
+                                        {{#if statusLabel}}
+                                        <div style="margin-top: 8px;">
+                                            <span
+                                                style="background-color: #dbeafe; color: #1e40af; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase;">
+                                                {{statusLabel}}
+                                            </span>
+                                        </div>
+                                        {{/if}}
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding: 0 40px 20px 40px;" class="mobile-padding">
+                            <h3
+                                style="margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; color: #94a3b8; letter-spacing: 1px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+                                Resumen del Pedido
+                            </h3>
+                            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                {{#each items}}
+                                <tr>
+                                    <td width="60%"
+                                        style="padding: 12px 0; border-bottom: 1px solid #f1f5f9; color: #334155; font-weight: 500;">
+                                        {{displayName}}
+                                        <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">Cant:
+                                            {{quantity}} x {{unitPriceFormatted}}</div>
+                                    </td>
+                                    <td width="40%" align="right"
+                                        style="padding: 12px 0; border-bottom: 1px solid #f1f5f9; color: #1e293b; font-weight: 600;">
+                                        {{lineTotalFormatted}}
+                                    </td>
+                                </tr>
+                                {{/each}}
+                            </table>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding: 0 40px 40px 40px;" class="mobile-padding">
+                            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                <tr>
+                                    <td align="right">
+                                        <table role="presentation" border="0" cellpadding="0" cellspacing="0"
+                                            width="200">
+                                            <tr>
+                                                <td style="padding: 5px 0; color: #64748b; font-size: 14px;">Subtotal:
+                                                </td>
+                                                <td align="right"
+                                                    style="padding: 5px 0; color: #1e293b; font-weight: 600;">
+                                                    {{subtotalFormatted}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 5px 0; color: #64748b; font-size: 14px;">Impuestos:
+                                                </td>
+                                                <td align="right"
+                                                    style="padding: 5px 0; color: #1e293b; font-weight: 600;">
+                                                    {{taxesFormatted}}</td>
+                                            </tr>
+                                            {{#if discountFormatted}}
+                                            <tr>
+                                                <td style="padding: 5px 0; color: #16a34a; font-size: 14px;">Descuento:
+                                                </td>
+                                                <td align="right"
+                                                    style="padding: 5px 0; color: #16a34a; font-weight: 600;">
+                                                    -{{discountFormatted}}</td>
+                                            </tr>
+                                            {{/if}}
+                                            <tr>
+                                                <td style="padding: 5px 0; color: #64748b; font-size: 14px;">Envío:</td>
+                                                <td align="right"
+                                                    style="padding: 5px 0; color: #1e293b; font-weight: 600;">
+                                                    {{shippingFormatted}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td
+                                                    style="padding-top: 15px; border-top: 2px solid #e2e8f0; color: #0f172a; font-weight: 700; font-size: 16px;">
+                                                    Total:</td>
+                                                <td align="right"
+                                                    style="padding-top: 15px; border-top: 2px solid #e2e8f0; color: #047857; font-weight: 700; font-size: 20px;">
+                                                    {{totalFormatted}}</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            {{#if customerNotes}}
+                            <div
+                                style="margin-top: 30px; background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 4px;">
+                                <p
+                                    style="margin: 0; font-size: 12px; font-weight: bold; color: #92400e; text-transform: uppercase;">
+                                    Notas adicionales:</p>
+                                <p style="margin: 5px 0 0 0; color: #b45309; font-style: italic; font-size: 14px;">
+                                    "{{customerNotes}}"</p>
+                            </div>
+                            {{/if}}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td align="center"
+                            style="background-color: #f8fafc; padding: 30px 40px; border-top: 1px solid #e2e8f0;">
+                            <p style="margin: 0 0 10px 0; font-size: 12px; color: #64748b;">
+                                ¿Necesitas ayuda? Responde a este correo o visita <a href="https://higinex.com"
+                                    style="color: #047857; text-decoration: none; font-weight: 600;">nuestro sitio
+                                    web</a>.
+                            </p>
+                            <p style="margin: 0; font-size: 11px; color: #94a3b8;">
+                                &copy; {{year}} Higinex S.A.S. - Bogotá, Colombia.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+
+</html>
